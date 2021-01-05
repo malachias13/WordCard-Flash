@@ -26,6 +26,9 @@ namespace WordGUI_Frameworks_
         string word;
         string definition;
 
+        bool HasSelected = false;
+        bool  HasData = true;
+
         public Form1()
         {
             InitializeComponent();
@@ -34,11 +37,21 @@ namespace WordGUI_Frameworks_
 
         private void previou_Btn_Click(object sender, EventArgs e)
         {
+            // Stops the user from beaking the program.
+            if (HasData == false)
+                return; 
+
+            HasSelected = false;
             padpreviou();
         }
 
         private void next_Btn_Click(object sender, EventArgs e)
         {
+            // Stops the user from beaking the program. Dose nothing when there is no data
+            if (HasData == false)
+                return;
+
+            HasSelected = false;
             padNext();
         }
 
@@ -47,10 +60,26 @@ namespace WordGUI_Frameworks_
 
             DataAccess db = new DataAccess();
             cardDeck = db.GetData();
+            /* This is a cheak to make sure there is data in the database. 
+             * If there is no data in the database do nothing. 
+             * It prvents the user from beaking the application and program.
+             * 
+             */
+            if(cardDeck.Count != 0)
+            {
+                HasData = true;
+                card = cardDeck[0];
+            }
+            else
+            {
+                HasData = false;
+                
+            }
+                RefreshData();
+                RefreshList();
 
-            card = cardDeck[0];
+                
 
-            RefreshData();
         }
 
         private void addWord_Btn_Click(object sender, EventArgs e)
@@ -76,45 +105,109 @@ namespace WordGUI_Frameworks_
                 db.AddData(word,definition);
                 addWord.Text = string.Empty;
                 addDefinition.Text = string.Empty;
+                
+                HasData = true;
             }
-            
+            RefreshData();
+            RefreshList();
+
+
 
         }
 
         private void remove_Btn_Click(object sender, EventArgs e)
         {
+            if (HasData == false)
+                return;
+
             DataAccess db = new DataAccess();
             cardDeck = db.GetData();
 
 
             db.RemoveData(card.Id);
-            padNext();
+            
+            cardDeck = db.GetData();
+
+            if (cardDeck.Count == 0)
+            {
+                HasData = false;
+                RefreshList();
+                ClearCard();
+                return;
+            }
+            else
+            {
+                padNext();
+                RefreshList();
+            }
+
+
         }
 
         private void Read_Btn_Click(object sender, EventArgs e)
         {
             SpeechSynthesizer speechSynthesizer = new SpeechSynthesizer();
 
-            speechSynthesizer.Rate = 3;
+            speechSynthesizer.Rate = 2;
 
             speechSynthesizer.Speak(WordText.Text + ". " + DefineDox.Text);
         }
+        private void WordList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (HasData == false)
+                return;
+
+            DataAccess db = new DataAccess();
+            int selectedIndex;
+            int IndexCount;
+            string word;
+
+            HasSelected = true;
+
+            cardDeck = db.GetData();
+
+            selectedIndex = WordList.SelectedIndex;
+            card = cardDeck[selectedIndex];
+            // debug (word)
+            word = card.word;
+
+            IndexCount = selectedIndex + 1;
+
+            if(HasSelected == true)
+            {
+                WordText.Text = card.word;
+                DefineDox.Text = card.definition;
+                CardCount.Text = IndexCount.ToString();
+
+            }
+
+        }
+
+
         public void padNext()
         {
             DataAccess db = new DataAccess();
             int numItems;
 
+            string words;
+            string wordsB;
+
             cardDeck = db.GetData();
             numItems = cardDeck.Count;
             currentIndex = Convert.ToInt32(CardCount.Text)-1; // This is the problem Fix
 
-            currentIndex++;
+            // Debug Word
+            wordsB = card.word;
+
+            
+             currentIndex++;
 
             if(currentIndex < numItems)
             {
                 
                 card = cardDeck[currentIndex];
                 id = currentIndex + 1;
+                    
             }
 
             if(currentIndex>= numItems)
@@ -122,9 +215,15 @@ namespace WordGUI_Frameworks_
                 
                 currentIndex = 0;
                 card = cardDeck[currentIndex];
-                id = currentIndex + 1;
+                id = currentIndex + 1;        
+
             }
-                RefreshData();
+            // Debug (word)
+            words = card.word;
+            
+            RefreshData();
+        
+           
         }
 
         private void padpreviou()
@@ -149,17 +248,47 @@ namespace WordGUI_Frameworks_
                 Index--;
                 card = cardDeck[Index];
                 id = Index + 1;
-                
+
             }
 
             RefreshData();
+          
         }
+
 
         private void RefreshData()
         {
+            DataAccess db = new DataAccess();
+            cardDeck = db.GetData();
+
+
             WordText.Text = card.word;
             DefineDox.Text = card.definition;
             CardCount.Text = id.ToString();
+
+        }
+        private void RefreshList()
+        {
+            DataAccess db = new DataAccess();
+            cardDeck = db.GetData();
+
+            // Update ListBox Home page 
+            WordList.DataSource = cardDeck;
+            WordList.DisplayMember = "FullInfo";
+            WordList.Refresh();
+
+            // Update ListBox Addwords page
+            WordList2.DataSource = cardDeck;
+            WordList2.DisplayMember = "FullInfo";
+            WordList2.Refresh();
+        }
+
+        // Clear the Card
+        private void ClearCard()
+        {
+            WordText.Text = string.Empty;
+            DefineDox.Text = string.Empty;
+            CardCount.Text = string.Empty;
         }
 
     }

@@ -11,6 +11,13 @@ namespace WordGUI_Frameworks_
         public string word { get; set; }
         public string definition { get; set; }
 
+        public string FullInfo
+        {
+            get
+            {
+                return $"{word}";
+            }
+        }
 
     }
   
